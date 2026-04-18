@@ -20,7 +20,8 @@ func main() {
 	CREATE TABLE IF NOT EXISTS urls (
 		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 		url TEXT,
-		code TEXT
+		code TEXT,
+		createdAt TEXT
 	)
 	`
 

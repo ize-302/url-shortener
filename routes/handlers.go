@@ -2,18 +2,19 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"ize-302/url-shortener/utils"
 )
 
 type URL struct {
-	ID   int    `json:"id"`
-	URL  string `json:"url"`
-	Code string `json:"code"`
+	ID        int    `json:"id"`
+	URL       string `json:"url"`
+	Code      string `json:"code"`
+	CreatedAt string `json:"createdAt"`
 }
 
 func gotoHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,11 +36,12 @@ func gotoHandler(w http.ResponseWriter, r *http.Request) {
 			var id int
 			var url string
 			var code string
-			err = rows.Scan(&id, &url, &code)
+			var createdAt string
+			err = rows.Scan(&id, &url, &code, &createdAt)
 			if err != nil {
 				log.Fatal(err)
 			}
-			urlObj := URL{ID: id, Code: code, URL: url}
+			urlObj := URL{ID: id, Code: code, URL: url, CreatedAt: createdAt}
 			urls = append(urls, urlObj)
 
 		}
@@ -83,17 +85,28 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		code := utils.GenerateRandomCode()
-		_, err = db.Exec(`INSERT into urls(url, code) VALUES(?, ?)`, url.URL, code)
+		createdAt := time.Now().UTC().Format(time.RFC3339)
+		_, err = db.Exec(`INSERT into urls(url, code, createdAt) VALUES(?, ?, ?)`, url.URL, code, createdAt)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("New url successfully created")
 		w.WriteHeader(http.StatusCreated)
-		urlData, err := db.Exec(`SELECT * FROM urls WHERE code = ?`, code)
+		urlData, err := db.Query(`SELECT * FROM urls WHERE code = ?`, code)
 		if err != nil {
 			log.Fatal(err)
 		}
-		json.NewEncoder(w).Encode(urlData)
+		for urlData.Next() {
+			var id int
+			var url string
+			var code string
+			var createdAt string
+			err = urlData.Scan(&id, &url, &code, &createdAt)
+			if err != nil {
+				log.Fatal(err)
+			}
+			urlObj := URL{ID: id, Code: code, URL: url, CreatedAt: createdAt}
+			json.NewEncoder(w).Encode(urlObj)
+		}
 	case "GET":
 		db := utils.ReadDB()
 		defer db.Close()
@@ -108,12 +121,12 @@ func urlHandler(w http.ResponseWriter, r *http.Request) {
 			var id int
 			var url string
 			var code string
-			err = rows.Scan(&id, &url, &code)
+			var createdAt string
+			err = rows.Scan(&id, &url, &code, &createdAt)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(id, url, code)
-			urlObj := URL{ID: id, Code: code, URL: url}
+			urlObj := URL{ID: id, Code: code, URL: url, CreatedAt: createdAt}
 			urls = append(urls, urlObj)
 		}
 
