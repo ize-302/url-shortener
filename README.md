@@ -27,7 +27,7 @@ Server starts on `:8080`.
 ### Shorten a URL
 
 ```
-POST /urls
+POST /shorten
 Content-Type: application/json
 
 {"url": "https://example.com"}

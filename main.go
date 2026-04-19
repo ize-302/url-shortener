@@ -3,8 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net/http"
 
-	"ize-302/url-shortener/routes"
+	"ize-302/url-shortener/route"
+	"ize-302/url-shortener/util"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -31,5 +33,8 @@ func main() {
 	}
 	log.Println("Table 'urls' created successfully")
 
-	routes.Requests()
+	store := util.NewStore(db)
+	route.RegisterHandlers(store)
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
